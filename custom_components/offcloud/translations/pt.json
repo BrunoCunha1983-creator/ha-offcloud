@@ -1,0 +1,68 @@
+{
+  "title": "Offcloud",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ligar à Offcloud",
+        "description": "Introduza a chave mostrada na Offcloud em Conta > API Key.",
+        "data": {
+          "api_key": "Chave API",
+          "scan_interval": "Intervalo de atualização (segundos)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Voltar a ligar a Offcloud",
+        "description": "Introduza uma chave API Offcloud válida.",
+        "data": {
+          "api_key": "Chave API"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Não foi possível contactar a Offcloud",
+      "invalid_auth": "Chave API inválida",
+      "unknown": "Erro inesperado"
+    },
+    "abort": {
+      "already_configured": "Esta conta Offcloud já está configurada",
+      "reauth_successful": "A ligação à Offcloud foi restaurada"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções da Offcloud",
+        "data": {
+          "scan_interval": "Intervalo de atualização (segundos)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "transfer_count": {
+        "name": "Transferências"
+      },
+      "active_transfers": {
+        "name": "Transferências ativas"
+      },
+      "completed_transfers": {
+        "name": "Transferências concluídas"
+      },
+      "failed_transfers": {
+        "name": "Transferências com erro"
+      },
+      "premium_expiration": {
+        "name": "Fim do Premium"
+      }
+    },
+    "binary_sensor": {
+      "premium": {
+        "name": "Premium"
+      },
+      "can_download": {
+        "name": "Downloads permitidos"
+      }
+    }
+  }
+}
