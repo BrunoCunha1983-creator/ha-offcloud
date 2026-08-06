@@ -11,7 +11,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, UnitOfDataRate
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -73,6 +73,7 @@ async def async_setup_entry(
                 [
                     OffcloudTransferStatusSensor(coordinator, request_id),
                     OffcloudTransferProgressSensor(coordinator, request_id),
+                    OffcloudTransferSpeedSensor(coordinator, request_id),
                 ]
             )
         if entities:
@@ -142,6 +143,8 @@ class _OffcloudTransferSensor(OffcloudCoordinatorEntity, SensorEntity):
             "file_name": transfer.get("fileName"),
             "message": transfer.get("message"),
             "created_on": transfer.get("createdOn"),
+            "total_bytes": transfer.get("totalBytes"),
+            "speed_source": transfer.get("speedSource"),
         }
 
 
@@ -156,7 +159,7 @@ class OffcloudTransferStatusSensor(_OffcloudTransferSensor):
         super().__init__(coordinator, request_id)
         transfer = self._transfer or {}
         name = transfer.get("fileName") or request_id
-        self._attr_name = f"{name} status"
+        self._attr_name = f"{name} estado"
         self._attr_unique_id = f"{request_id}_status"
 
     @property
@@ -171,13 +174,12 @@ class OffcloudTransferProgressSensor(_OffcloudTransferSensor):
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_suggested_display_precision = 1
     _attr_icon = "mdi:download-circle-outline"
-    _attr_entity_registry_enabled_default = False
 
     def __init__(self, coordinator, request_id: str) -> None:
         super().__init__(coordinator, request_id)
         transfer = self._transfer or {}
         name = transfer.get("fileName") or request_id
-        self._attr_name = f"{name} progress"
+        self._attr_name = f"{name} progresso"
         self._attr_unique_id = f"{request_id}_progress"
 
     @property
@@ -185,9 +187,33 @@ class OffcloudTransferProgressSensor(_OffcloudTransferSensor):
         transfer = self._transfer
         if not transfer:
             return None
+        value = transfer.get("progressPercent")
+        if isinstance(value, (int, float)):
+            return float(value)
         if transfer.get("status") == "downloaded":
             return 100.0
-        progress = transfer.get("progress")
-        if isinstance(progress, (int, float)):
-            return round(float(progress) * 100, 1)
         return None
+
+
+class OffcloudTransferSpeedSensor(_OffcloudTransferSensor):
+    """Download speed sensor for one Offcloud transfer."""
+
+    _attr_device_class = SensorDeviceClass.DATA_RATE
+    _attr_native_unit_of_measurement = UnitOfDataRate.BYTES_PER_SECOND
+    _attr_suggested_display_precision = 1
+    _attr_icon = "mdi:speedometer"
+
+    def __init__(self, coordinator, request_id: str) -> None:
+        super().__init__(coordinator, request_id)
+        transfer = self._transfer or {}
+        name = transfer.get("fileName") or request_id
+        self._attr_name = f"{name} velocidade de download"
+        self._attr_unique_id = f"{request_id}_download_speed"
+
+    @property
+    def native_value(self) -> float | None:
+        transfer = self._transfer
+        if not transfer:
+            return None
+        value = transfer.get("downloadSpeedBps")
+        return float(value) if isinstance(value, (int, float)) else None
