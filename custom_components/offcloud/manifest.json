@@ -1,0 +1,16 @@
+{
+  "domain": "offcloud",
+  "name": "Offcloud",
+  "codeowners": [
+    "@BrunoCunha1983-creator"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/BrunoCunha1983-creator/ha-offcloud",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/BrunoCunha1983-creator/ha-offcloud/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "1.0.0"
+}
