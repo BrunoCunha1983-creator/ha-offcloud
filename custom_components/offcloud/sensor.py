@@ -27,6 +27,12 @@ def _count_status(data: dict[str, Any], status: str) -> int:
     return sum(1 for item in _transfers(data) if item.get("status") == status)
 
 
+def _rounded_unit(value: Any, divisor: float, digits: int = 2) -> float | None:
+    if not isinstance(value, (int, float)):
+        return None
+    return round(float(value) / divisor, digits)
+
+
 SUMMARY_DESCRIPTIONS: tuple[SensorEntityDescription, ...] = (
     SensorEntityDescription(
         key="transfer_count", translation_key="transfer_count", icon="mdi:cloud-download"
@@ -138,13 +144,31 @@ class _OffcloudTransferSensor(OffcloudCoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         transfer = self._transfer or {}
+        eta_seconds = transfer.get("etaSeconds")
         return {
             "request_id": self.request_id,
             "file_name": transfer.get("fileName"),
             "message": transfer.get("message"),
             "created_on": transfer.get("createdOn"),
-            "total_bytes": transfer.get("totalBytes"),
+            "progress_percent": transfer.get("progressPercent"),
+            "progress_source": transfer.get("progressSource"),
+            "download_speed_mb_s": _rounded_unit(
+                transfer.get("downloadSpeedBps"), 1_000_000
+            ),
             "speed_source": transfer.get("speedSource"),
+            "downloaded_gb": _rounded_unit(
+                transfer.get("downloadedBytes"), 1_000_000_000
+            ),
+            "total_gb": _rounded_unit(transfer.get("totalBytes"), 1_000_000_000),
+            "downloaded_bytes": transfer.get("downloadedBytes"),
+            "total_bytes": transfer.get("totalBytes"),
+            "peers": transfer.get("peers"),
+            "eta_minutes": (
+                round(float(eta_seconds) / 60, 1)
+                if isinstance(eta_seconds, (int, float))
+                else None
+            ),
+            "eta_seconds": eta_seconds,
         }
 
 
