@@ -1,0 +1,54 @@
+{
+  "title": "Offcloud",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Offcloud",
+        "description": "Enter the API key shown in Offcloud under Account > API Key.",
+        "data": {
+          "api_key": "API key",
+          "scan_interval": "Update interval (seconds)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect Offcloud",
+        "description": "Enter a valid Offcloud API key.",
+        "data": {
+          "api_key": "API key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to Offcloud",
+      "invalid_auth": "Invalid API key",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This Offcloud account is already configured",
+      "reauth_successful": "Offcloud was reconnected successfully"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Offcloud options",
+        "data": {
+          "scan_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "transfer_count": {"name": "Transfers"},
+      "active_transfers": {"name": "Active transfers"},
+      "completed_transfers": {"name": "Completed transfers"},
+      "failed_transfers": {"name": "Failed transfers"},
+      "premium_expiration": {"name": "Premium expiration"}
+    },
+    "binary_sensor": {
+      "premium": {"name": "Premium"},
+      "can_download": {"name": "Downloads allowed"}
+    }
+  }
+}
