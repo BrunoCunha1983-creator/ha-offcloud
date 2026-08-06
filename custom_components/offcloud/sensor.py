@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import date
 from typing import Any
 
@@ -13,10 +14,13 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfDataRate
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .entity import OffcloudCoordinatorEntity
+
+_TRANSFER_UNIQUE_ID_SUFFIXES = ("_status", "_progress", "_download_speed")
 
 
 def _transfers(data: dict[str, Any]) -> list[dict[str, Any]]:
@@ -60,33 +64,69 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Offcloud sensors."""
+    """Set up Offcloud sensors and remove stale transfer entities."""
     coordinator = hass.data[DOMAIN][entry.entry_id].coordinator
+    entity_registry = er.async_get(hass)
+
     async_add_entities(
         [OffcloudSummarySensor(coordinator, description) for description in SUMMARY_DESCRIPTIONS]
     )
 
-    known: set[str] = set()
+    known_request_ids: set[str] = set()
+    sync_lock = asyncio.Lock()
 
-    def add_new_transfers() -> None:
-        entities: list[SensorEntity] = []
-        for transfer in _transfers(coordinator.data):
-            request_id = str(transfer.get("requestId") or "").strip()
-            if not request_id or request_id in known:
-                continue
-            known.add(request_id)
-            entities.extend(
-                [
-                    OffcloudTransferStatusSensor(coordinator, request_id),
-                    OffcloudTransferProgressSensor(coordinator, request_id),
-                    OffcloudTransferSpeedSensor(coordinator, request_id),
-                ]
-            )
-        if entities:
-            async_add_entities(entities)
+    async def async_sync_transfer_entities() -> None:
+        """Add current transfers and delete entities for removed transfers."""
+        async with sync_lock:
+            current_request_ids = {
+                str(transfer.get("requestId") or "").strip()
+                for transfer in _transfers(coordinator.data)
+                if str(transfer.get("requestId") or "").strip()
+            }
 
-    add_new_transfers()
-    entry.async_on_unload(coordinator.async_add_listener(add_new_transfers))
+            new_request_ids = current_request_ids - known_request_ids
+            entities: list[SensorEntity] = []
+            for transfer in _transfers(coordinator.data):
+                request_id = str(transfer.get("requestId") or "").strip()
+                if not request_id or request_id not in new_request_ids:
+                    continue
+                entities.extend(
+                    [
+                        OffcloudTransferStatusSensor(coordinator, request_id),
+                        OffcloudTransferProgressSensor(coordinator, request_id),
+                        OffcloudTransferSpeedSensor(coordinator, request_id),
+                    ]
+                )
+
+            if entities:
+                async_add_entities(entities)
+
+            # A successful refresh which no longer contains a transfer means it
+            # was removed from Offcloud. Delete its three registry entries so
+            # Home Assistant does not retain unavailable/orphaned entities.
+            for registry_entry in er.async_entries_for_config_entry(
+                entity_registry, entry.entry_id
+            ):
+                if registry_entry.domain != "sensor" or registry_entry.platform != DOMAIN:
+                    continue
+
+                request_id: str | None = None
+                for suffix in _TRANSFER_UNIQUE_ID_SUFFIXES:
+                    if registry_entry.unique_id.endswith(suffix):
+                        request_id = registry_entry.unique_id[: -len(suffix)]
+                        break
+
+                if request_id and request_id not in current_request_ids:
+                    entity_registry.async_remove(registry_entry.entity_id)
+
+            known_request_ids.clear()
+            known_request_ids.update(current_request_ids)
+
+    def schedule_sync() -> None:
+        hass.async_create_task(async_sync_transfer_entities())
+
+    await async_sync_transfer_entities()
+    entry.async_on_unload(coordinator.async_add_listener(schedule_sync))
 
 
 class OffcloudSummarySensor(OffcloudCoordinatorEntity, SensorEntity):
