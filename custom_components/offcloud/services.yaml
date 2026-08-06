@@ -1,0 +1,55 @@
+add_url:
+  name: Add URL
+  description: Add an HTTP, HTTPS, FTP, hoster, NZB or magnet URL to Offcloud.
+  fields:
+    url:
+      name: URL
+      description: URL or magnet link to add.
+      required: true
+      example: "magnet:?xt=urn:btih:..."
+      selector:
+        text:
+
+remove:
+  name: Remove transfers
+  description: Remove one or more cloud transfers from Offcloud.
+  fields:
+    request_ids:
+      name: Request IDs
+      description: One or more Offcloud request IDs.
+      required: true
+      example: ["abc123", "def456"]
+      selector:
+        object:
+
+refresh:
+  name: Refresh
+  description: Refresh the Offcloud account and transfer entities immediately.
+
+check_cache:
+  name: Check cache
+  description: Check whether one or more magnet links are cached. This service returns response data.
+  fields:
+    urls:
+      name: Magnet links
+      description: One or more magnet links.
+      required: true
+      selector:
+        object:
+    include_files:
+      name: Include files
+      description: Include filenames, folders and sizes in the response.
+      default: false
+      selector:
+        boolean:
+
+explore:
+  name: Explore transfer
+  description: Return detailed file paths and direct download URLs for a completed multi-file transfer.
+  fields:
+    request_id:
+      name: Request ID
+      description: Offcloud request ID.
+      required: true
+      selector:
+        text:
